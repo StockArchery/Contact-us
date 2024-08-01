@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Firebase Form</title>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, push, set, get, update } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZ_oDXISkEH4B6W7ucoYwP-QOJyB3tkBw",
+            authDomain: "lead-form2.firebaseapp.com",
+            databaseURL: "https://lead-form2-default-rtdb.firebaseio.com",
+            projectId: "lead-form2",
+            storageBucket: "lead-form2.appspot.com",
+            messagingSenderId: "974601262133",
+            appId: "1:974601262133:web:f494b05f4d4d41b3f10d7c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Function to save form data
+        async function saveFormData(name, email, phone, district, tradingExperience) {
+            const submissionsRef = ref(database, 'submissions');
+            const newSubmissionRef = push(submissionsRef, {
+                name: name,
+                email: email,
+                phone: phone,
+                district: district,
+                tradingExperience: tradingExperience
+            });
+
+            try {
+                await newSubmissionRef;
+                alert('Data saved successfully!');
+
+                // Update daily node with the new submission
+                await updateDailyNode();
+            } catch (error) {
+                console.error('Error saving data: ', error);
+                alert('Failed to save data.');
+            }
+        }
+
+        // Function to update the daily node with the current submissions data
+        async function updateDailyNode() {
+            try {
+                const today = new Date();
+                const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+                const submissionsRef = ref(database, 'submissions');
+                const dailyRef = ref(database, 'daily/' + dateString);
+
+                // Get the current submissions data
+                const submissionsSnapshot = await get(submissionsRef);
+                const submissionsData = submissionsSnapshot.val();
+
+                // Get the current daily data
+                const dailySnapshot = await get(dailyRef);
+                const dailyData = dailySnapshot.val() || {};
+
+                // Merge new submissions with existing daily data
+                const updatedDailyData = { ...dailyData, ...submissionsData };
+
+                // Set the updated data to the daily node
+                await set(dailyRef, updatedDailyData);
+                console.log('Daily data updated successfully!');
+            } catch (error) {
+                console.error('Error updating daily data: ', error);
+            }
+        }
+
+        // Start the timer when the document is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('dataForm');
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                // Get form data
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+                const district = document.getElementById('district').value;
+                const tradingExperience = document.getElementById('tradingExperience').value;
+
+                // Save data to Firebase
+                saveFormData(name, email, phone, district, tradingExperience);
+
+                // Reset form
+                form.reset();
+            });
+        });
+    </script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: linear-gradient(135deg, #a8c0ff, #fbc2eb);
+            color: #333;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            padding: 20px;
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 1.5s ease-out;
+            transition: transform 0.5s ease-in-out, color 0.5s ease-in-out;
+        }
+
+        h1:hover {
+            transform: scale(1.05);
+            color: #f9f9f9;
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            margin-top: 20px;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            0% {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            flex: 1;
+            margin-right: 20px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+            transition: color 0.3s ease-in-out;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"] {
+            flex: 2;
+            padding: 14px;
+            border: 2px solid #FFC107;
+            border-radius: 6px;
+            background-color: #fdfdfd;
+            color: #333;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="text"]:hover,
+        input[type="email"]:hover,
+        input[type="tel"]:hover,
+        input[type="number"]:hover,
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        input[type="number"]:focus {
+            border-color: #FFD700;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+            outline: none;
+        }
+
+        input[type="submit"] {
+            background: #FFC107;
+            color: #fff;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            width: 100%;
+            transition: background 0.3s, transform 0.3s;
+        }
+
+        input[type="submit"]:hover {
+            background: #FFD700;
+            transform: scale(1.05);
+        }
+
+        /* Responsive design adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+                padding: 15px;
+            }
+
+            form {
+                padding: 30px;
+                margin-top: 15px;
+            }
+
+            input[type="text"],
+            input[type="email"],
+            input[type="tel"],
+            input[type="number"] {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            input[type="submit"] {
+                padding: 14px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+                padding: 10px;
+            }
+
+            form {
+                padding: 20px;
+                margin-top: 10px;
+                max-height: 80vh; /* Set maximum height for smaller screens */
+                overflow-y: auto; /* Add scroll if needed */
+            }
+
+            input[type="text"],
+            input[type="email"],
+            input[type="tel"],
+            input[type="number"] {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            input[type="submit"] {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Fill in your details, and we'll contact you soon</h1>
+    <form id="dataForm">
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" name="phone" required>
+        </div>
+        <div class="form-group">
+            <label for="district">District:</label>
+            <input type="text" id="district" name="district" required>
+        </div>
+        <div class="form-group">
+            <label for="tradingExperience">Trading Experience (in years):</label>
+            <input type="number" id="tradingExperience" name="tradingExperience" required>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
